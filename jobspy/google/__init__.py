@@ -22,13 +22,16 @@ from jobspy.google.util import log, find_job_info_initial_page, find_job_info
 
 class Google(Scraper):
     def __init__(
-        self, proxies: list[str] | str | None = None, ca_cert: str | None = None
+        self,
+        proxies: list[str] | str | None = None,
+        ca_cert: str | None = None,
+        debug: bool = False,
     ):
         """
         Initializes Google Scraper with the Goodle jobs search url
         """
         site = Site(Site.GOOGLE)
-        super().__init__(site, proxies=proxies, ca_cert=ca_cert)
+        super().__init__(site, proxies=proxies, ca_cert=ca_cert, debug=debug)
 
         self.country = None
         self.session = None

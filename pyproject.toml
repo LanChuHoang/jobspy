@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "jobhunt"
-version = "1.0.3"
+version = "1.0.4"
 description = "A folk of JobSpy"
 authors = ["Alan Chu <hoanglan.ict@gmail.com>"]
 homepage = "https://github.com/LanChuHoang/jobspy.git"

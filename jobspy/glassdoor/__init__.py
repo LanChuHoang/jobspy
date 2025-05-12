@@ -34,13 +34,16 @@ log = create_logger("Glassdoor")
 
 class Glassdoor(Scraper):
     def __init__(
-        self, proxies: list[str] | str | None = None, ca_cert: str | None = None
+        self,
+        proxies: list[str] | str | None = None,
+        ca_cert: str | None = None,
+        debug: bool = False,
     ):
         """
         Initializes GlassdoorScraper with the Glassdoor job search url
         """
         site = Site(Site.GLASSDOOR)
-        super().__init__(site, proxies=proxies, ca_cert=ca_cert)
+        super().__init__(site, proxies=proxies, ca_cert=ca_cert, debug=debug)
 
         self.base_url = None
         self.country = None
@@ -260,14 +263,12 @@ class Glassdoor(Scraper):
         res = self.session.get(url)
         if res.status_code != 200:
             if res.status_code == 429:
-                err = f"429 Response - Blocked by Glassdoor for too many requests"
-                log.error(err)
-                return None, None
+                err = "429 Response - Blocked by Glassdoor for too many requests"
             else:
                 err = f"Glassdoor response status code {res.status_code}"
                 err += f" - {res.text}"
-                log.error(f"Glassdoor response status code {res.status_code}")
-                return None, None
+            log.error(f"Glassdoor response status code {err}")
+            return None, None
         items = res.json()
 
         if not items:

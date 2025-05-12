@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import math
 import random
 import time
 from datetime import datetime
@@ -257,6 +256,7 @@ class LinkedIn(Scraper):
         :return: dict
         """
         try:
+            log.info(f"Getting job details for {job_id}")
             response = self.session.get(
                 f"{self.base_url}/jobs/view/{job_id}", timeout=5
             )

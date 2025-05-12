@@ -28,12 +28,15 @@ log = create_logger("Indeed")
 
 class Indeed(Scraper):
     def __init__(
-        self, proxies: list[str] | str | None = None, ca_cert: str | None = None
+        self,
+        proxies: list[str] | str | None = None,
+        ca_cert: str | None = None,
+        debug: bool = False,
     ):
         """
         Initializes IndeedScraper with the Indeed API url
         """
-        super().__init__(Site.INDEED, proxies=proxies)
+        super().__init__(Site.INDEED, proxies=proxies, debug=debug)
 
         self.session = create_session(
             proxies=self.proxies, ca_cert=ca_cert, is_tls=False
