@@ -18,7 +18,7 @@ from jobspy.linkedin.util import (
     job_type_code,
     parse_job_type,
     parse_job_level,
-    parse_company_industry
+    parse_company_industry,
 )
 from jobspy.model import (
     JobPost,
@@ -83,9 +83,10 @@ class LinkedIn(Scraper):
         seconds_old = (
             scraper_input.hours_old * 3600 if scraper_input.hours_old else None
         )
-        continue_search = (
-            lambda: len(job_list) < scraper_input.results_wanted and start < 1000
-        )
+
+        def continue_search() -> bool:
+            return len(job_list) < scraper_input.results_wanted and start < 1000
+
         while continue_search():
             request_count += 1
             log.info(
@@ -122,9 +123,7 @@ class LinkedIn(Scraper):
                 )
                 if response.status_code not in range(200, 400):
                     if response.status_code == 429:
-                        err = (
-                            f"429 Response - Blocked by LinkedIn for too many requests"
-                        )
+                        err = "429 Response - Blocked by LinkedIn for too many requests"
                     else:
                         err = f"LinkedIn response status code {response.status_code}"
                         err += f" - {response.text}"
@@ -132,7 +131,7 @@ class LinkedIn(Scraper):
                     return JobResponse(jobs=job_list)
             except Exception as e:
                 if "Proxy responded with" in str(e):
-                    log.error(f"LinkedIn: Bad proxy")
+                    log.error("LinkedIn: Bad proxy")
                 else:
                     log.error(f"LinkedIn: {str(e)}")
                 return JobResponse(jobs=job_list)
@@ -164,7 +163,7 @@ class LinkedIn(Scraper):
 
             if continue_search():
                 time.sleep(random.uniform(self.delay, self.delay + self.band_delay))
-                start += len(job_list)
+                start += 25
 
         job_list = job_list[: scraper_input.results_wanted]
         return JobResponse(jobs=job_list)
@@ -203,17 +202,16 @@ class LinkedIn(Scraper):
         metadata_card = job_card.find("div", class_="base-search-card__metadata")
         location = self._get_location(metadata_card)
 
-        datetime_tag = (
-            metadata_card.find("time", class_="job-search-card__listdate")
-            if metadata_card
-            else None
-        )
+        datetime_tag = metadata_card.find("time") if metadata_card else None
         date_posted = None
         if datetime_tag and "datetime" in datetime_tag.attrs:
             datetime_str = datetime_tag["datetime"]
             try:
                 date_posted = datetime.strptime(datetime_str, "%Y-%m-%d")
-            except:
+            except Exception as _:
+                log.debug(
+                    f"Cannot parse posted date, the full html is {metadata_card.prettify()}"
+                )
                 date_posted = None
         job_details = {}
         if full_descr:
@@ -252,7 +250,8 @@ class LinkedIn(Scraper):
                 f"{self.base_url}/jobs/view/{job_id}", timeout=5
             )
             response.raise_for_status()
-        except:
+        except Exception as e:
+            log.debug(f"Cannot get job details for {job_id}, error: {str(e)})")
             return {}
         if "linkedin.com/signup" in response.url:
             return {}
