@@ -5,6 +5,7 @@ from typing import Optional
 from datetime import date
 from enum import Enum
 from pydantic import BaseModel
+import os
 
 
 class JobType(Enum):
@@ -272,12 +273,15 @@ class JobPost(BaseModel):
     job_function: str | None = None
 
     # Naukri specific
-    skills: list[str] | None = None  #from tagsAndSkills
-    experience_range: str | None = None  #from experienceText
-    company_rating: float | None = None  #from ambitionBoxData.AggregateRating
-    company_reviews_count: int | None = None  #from ambitionBoxData.ReviewsCount
-    vacancy_count: int | None = None  #from vacancy
-    work_from_home_type: str | None = None  #from clusters.wfhType (e.g., "Hybrid", "Remote")
+    skills: list[str] | None = None  # from tagsAndSkills
+    experience_range: str | None = None  # from experienceText
+    company_rating: float | None = None  # from ambitionBoxData.AggregateRating
+    company_reviews_count: int | None = None  # from ambitionBoxData.ReviewsCount
+    vacancy_count: int | None = None  # from vacancy
+    work_from_home_type: str | None = (
+        None  # from clusters.wfhType (e.g., "Hybrid", "Remote")
+    )
+
 
 class JobResponse(BaseModel):
     jobs: list[JobPost] = []
@@ -320,11 +324,23 @@ class ScraperInput(BaseModel):
 
 class Scraper(ABC):
     def __init__(
-        self, site: Site, proxies: list[str] | None = None, ca_cert: str | None = None
+        self,
+        site: Site,
+        proxies: list[str] | None = None,
+        ca_cert: str | None = None,
+        debug: bool = False,
     ):
         self.site = site
         self.proxies = proxies
         self.ca_cert = ca_cert
+        self.debug = debug
+        self.debug_dir = "debug"
+        if debug:
+            os.makedirs(self.debug_dir, exist_ok=True)
 
     @abstractmethod
     def scrape(self, scraper_input: ScraperInput) -> JobResponse: ...
+
+    def write_response_to_file(self, filename: str, response: str):
+        with open(f"{self.debug_dir}/{filename}", "+w") as f:
+            f.write(response)

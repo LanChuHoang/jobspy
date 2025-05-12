@@ -11,7 +11,7 @@ from jobspy.google import Google
 from jobspy.indeed import Indeed
 from jobspy.linkedin import LinkedIn
 from jobspy.naukri import Naukri
-from jobspy.model import JobType, Location, JobResponse, Country
+from jobspy.model import Location, JobResponse, Country
 from jobspy.model import SalarySource, ScraperInput, Site
 from jobspy.util import (
     set_logger_level,
@@ -30,7 +30,7 @@ def scrape_jobs(
     search_term: str | None = None,
     google_search_term: str | None = None,
     location: str | None = None,
-    distance: int | None = 50,
+    distance: int | None = None,
     is_remote: bool = False,
     job_type: str | None = None,
     easy_apply: bool | None = None,
@@ -77,6 +77,7 @@ def scrape_jobs(
         return site_types
 
     country_enum = Country.from_string(country_indeed)
+    debug = verbose == 3
 
     scraper_input = ScraperInput(
         site_type=get_site_type(),
@@ -98,11 +99,11 @@ def scrape_jobs(
 
     def scrape_site(site: Site) -> Tuple[str, JobResponse]:
         scraper_class = SCRAPER_MAPPING[site]
-        scraper = scraper_class(proxies=proxies, ca_cert=ca_cert)
+        scraper = scraper_class(proxies=proxies, ca_cert=ca_cert, debug=debug)
         scraped_data: JobResponse = scraper.scrape(scraper_input)
         cap_name = site.value.capitalize()
         site_name = "ZipRecruiter" if cap_name == "Zip_recruiter" else cap_name
-        create_logger(site_name).info(f"finished scraping")
+        create_logger(site_name).info("finished scraping")
         return site.value, scraped_data
 
     site_to_jobs_dict = {}
@@ -125,7 +126,7 @@ def scrape_jobs(
     for site, job_response in site_to_jobs_dict.items():
         for job in job_response.jobs:
             job_data = job.dict()
-            job_url = job_data["job_url"]
+            # job_url = job_data["job_url"]
             job_data["site"] = site
             job_data["company"] = job_data["company_name"]
             job_data["job_type"] = (
@@ -179,7 +180,7 @@ def scrape_jobs(
                 else None
             )
 
-            #naukri-specific fields
+            # naukri-specific fields
             job_data["skills"] = (
                 ", ".join(job_data["skills"]) if job_data["skills"] else None
             )

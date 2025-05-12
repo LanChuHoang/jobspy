@@ -137,16 +137,17 @@ def set_logger_level(verbose: int):
     Adjusts the logger's level. This function allows the logging level to be changed at runtime.
 
     Parameters:
-    - verbose: int {0, 1, 2} (default=2, all logs)
+    - verbose: int {0, 1, 2, 3} (0: ERROR, 1: WARNING, 2: INFO, 3: DEBUG, default: INFO)
     """
     if verbose is None:
         return
-    level_name = {2: "INFO", 1: "WARNING", 0: "ERROR"}.get(verbose, "INFO")
+    level_name = {3: "DEBUG", 2: "INFO", 1: "WARNING", 0: "ERROR"}.get(verbose, "INFO")
     level = getattr(logging, level_name.upper(), None)
     if level is not None:
         for logger_name in logging.root.manager.loggerDict:
             if logger_name.startswith("JobSpy:"):
                 logging.getLogger(logger_name).setLevel(level)
+
     else:
         raise ValueError(f"Invalid log level: {level_name}")
 

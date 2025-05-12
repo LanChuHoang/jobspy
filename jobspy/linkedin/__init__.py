@@ -50,12 +50,15 @@ class LinkedIn(Scraper):
     jobs_per_page = 25
 
     def __init__(
-        self, proxies: list[str] | str | None = None, ca_cert: str | None = None
+        self,
+        proxies: list[str] | str | None = None,
+        ca_cert: str | None = None,
+        debug: bool = False,
     ):
         """
         Initializes LinkedInScraper with the LinkedIn job search url
         """
-        super().__init__(Site.LINKEDIN, proxies=proxies, ca_cert=ca_cert)
+        super().__init__(Site.LINKEDIN, proxies=proxies, ca_cert=ca_cert, debug=debug)
         self.session = create_session(
             proxies=self.proxies,
             ca_cert=ca_cert,
@@ -68,6 +71,10 @@ class LinkedIn(Scraper):
         self.scraper_input = None
         self.country = "worldwide"
         self.job_url_direct_regex = re.compile(r'(?<=\?url=)[^"]+')
+        self.init_search_endpoint = f"{self.base_url}/jobs-guest/jobs/search"
+        self.more_jobs_endpoint = (
+            f"{self.base_url}/jobs-guest/jobs/api/seeMoreJobPostings/search"
+        )
 
     def scrape(self, scraper_input: ScraperInput) -> JobResponse:
         """
@@ -89,9 +96,7 @@ class LinkedIn(Scraper):
 
         while continue_search():
             request_count += 1
-            log.info(
-                f"search page: {request_count} / {math.ceil(scraper_input.results_wanted / 10)}"
-            )
+            log.info(f"Making Linkedin request start={start}")
             params = {
                 "keywords": scraper_input.search_term,
                 "location": scraper_input.location,
@@ -116,11 +121,10 @@ class LinkedIn(Scraper):
 
             params = {k: v for k, v in params.items() if v is not None}
             try:
-                response = self.session.get(
-                    f"{self.base_url}/jobs-guest/jobs/api/seeMoreJobPostings/search?",
-                    params=params,
-                    timeout=10,
+                endpoint = (
+                    self.init_search_endpoint if start == 0 else self.more_jobs_endpoint
                 )
+                response = self.session.get(endpoint, params=params, timeout=10)
                 if response.status_code not in range(200, 400):
                     if response.status_code == 429:
                         err = "429 Response - Blocked by LinkedIn for too many requests"
@@ -137,6 +141,13 @@ class LinkedIn(Scraper):
                 return JobResponse(jobs=job_list)
 
             soup = BeautifulSoup(response.text, "html.parser")
+            if self.debug:
+                serialized_params = "&".join(
+                    f"{key}={value}" for key, value in params.items()
+                )
+                file_name = f"linkedin_{serialized_params}.html"
+                self.write_response_to_file(file_name, response.text)
+
             job_cards = soup.find_all("div", class_="base-search-card")
             if len(job_cards) == 0:
                 return JobResponse(jobs=job_list)
